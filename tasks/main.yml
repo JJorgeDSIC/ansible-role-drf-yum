@@ -1,0 +1,49 @@
+- name: Upgrade all packages
+  yum:
+    name: '*'
+    state: latest
+####################################
+# --- Dependencies       --------  #
+####################################
+- name: Install list of python packages
+  yum: 
+    name: "{{ item }}"
+    update_cache: true
+    state: present
+  with_items:
+    - git
+    - python-devel
+    - python-pip
+    - python-virtualenv
+    - python34-devel.x86_64
+    - python34-setuptools
+    - python34-pip
+- name: Install Jupyter Notebook
+  pip: 
+   name: jupyter 
+   executable: /usr/bin/pip-3.4
+- name: Get updated files from git repository
+  become: true
+  become_user: "{{ common.user }}"
+  git: 
+    repo: 'https://github.com/JJorgeDSIC/DRF_Experiments.git'
+    dest: "{{ common.project_dir }}/repo"
+- name: Install requirements
+  become: true
+  become_user: "{{ common.user }}"
+  pip:
+    extra_args: --user
+    requirements: "{{ common.project_dir }}/repo/requirements.txt"
+    executable: /usr/bin/pip-3.4
+- name: Populating the app
+  become: true
+  become_user: "{{ common.user }}"
+  shell: ./clean.sh
+  args:
+    chdir: "{{ common.project_dir }}/repo/djangorest/"
+- name: Running the app
+  become: true
+  become_user: "{{ common.user }}"
+  shell: nohup python3 manage.py runserver 0.0.0.0:8000 &
+  args:
+    chdir: "{{ common.project_dir }}/repo/djangorest/"
